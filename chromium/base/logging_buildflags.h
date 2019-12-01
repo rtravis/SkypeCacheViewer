@@ -1,0 +1,2 @@
+
+#define BUILDFLAG(...) 0
