@@ -1,4 +1,11 @@
-
+/*
+ * skype_leveldb_scanner.cpp - scan a Skype LevelDB cache
+ *
+ *  Created on: Nov 23, 2019
+ *      Author: Robert
+ *   Copyright: Use of this source code is governed by a BSD 2-Clause license
+ *              that can be found in the LICENSE file.
+ */
 #include "chromium_leveldb_comparator_provider.h"
 
 #include <leveldb/db.h>
