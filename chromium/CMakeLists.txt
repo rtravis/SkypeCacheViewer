@@ -3,7 +3,6 @@ set(SRCS
 	storage/common/database/database_identifier.cc
 	base/callback_helpers.cc
 	base/sequence_token.cc
-	base/token.cc
 	base/callback_internal.cc
 	base/observer_list_threadsafe.cc
 	base/time/time_exploded_posix.cc
@@ -14,45 +13,12 @@ set(SRCS
 	base/time/time_now_posix.cc
 	base/time/time_conversion_posix.cc
 	base/time/default_tick_clock.cc
-	base/task_runner.cc
 	base/base_switches.cc
 	base/at_exit.cc
-	base/native_library_posix.cc
 	base/environment.cc
-	base/system/sys_info_linux.cc
-	base/system/sys_info_posix.cc
-	base/system/sys_info.cc
-	base/run_loop.cc
-	base/lazy_instance_helpers.cc
-	base/synchronization/condition_variable_posix.cc
 	base/synchronization/atomic_flag.cc
 	base/synchronization/lock_impl_posix.cc
 	base/synchronization/lock.cc
-	base/synchronization/waitable_event_watcher_posix.cc
-	base/synchronization/waitable_event_posix.cc
-	base/native_library.cc
-	base/metrics/single_sample_metrics.cc
-	base/metrics/histogram_base.cc
-	base/metrics/ukm_source_id.cc
-	base/metrics/field_trial_params.cc
-	base/metrics/crc32.cc
-	base/metrics/persistent_sample_map.cc
-	base/metrics/bucket_ranges.cc
-	base/metrics/sample_map.cc
-	base/metrics/persistent_memory_allocator.cc
-	base/metrics/field_trial_param_associator.cc
-	base/metrics/histogram_samples.cc
-	base/metrics/sparse_histogram.cc
-	base/metrics/field_trial.cc
-	base/metrics/persistent_histogram_allocator.cc
-	base/metrics/histogram_functions.cc
-	base/metrics/statistics_recorder.cc
-	base/metrics/histogram_snapshot_manager.cc
-	base/metrics/dummy_histogram.cc
-	base/metrics/histogram.cc
-	base/metrics/sample_vector.cc
-	base/metrics/metrics_hashes.cc
-	base/rand_util.cc
 	base/third_party/nspr/prtime.cc
 	base/third_party/icu/icu_utf.cc
 	base/third_party/cityhash/city.cc
@@ -66,35 +32,11 @@ set(SRCS
 	base/third_party/double_conversion/double-conversion/cached-powers.cc
 	base/location.cc
 	base/pickle.cc
-	base/debug/stack_trace.cc
-	base/debug/debugger_posix.cc
-	base/debug/crash_logging.cc
-	base/debug/alias.cc
-	base/debug/stack_trace_posix.cc
-	base/debug/debugger.cc
 	base/value_iterators.cc
 	base/values.cc
-	base/scoped_native_library.cc
-	base/sequenced_task_runner.cc
 	base/threading/thread_restrictions.cc
-	base/threading/scoped_thread_priority.cc
-	base/threading/sequence_local_storage_slot.cc
 	base/threading/thread_local_storage_posix.cc
-	base/threading/watchdog.cc
-	base/threading/platform_thread_linux.cc
-	base/threading/thread_task_runner_handle.cc
-	base/threading/platform_thread_internal_posix.cc
-	base/threading/sequenced_task_runner_handle.cc
-	base/threading/thread_id_name_manager.cc
-	base/threading/platform_thread_posix.cc
-	base/threading/thread_collision_warner.cc
-	base/threading/thread.cc
-	base/threading/sequence_local_storage_map.cc
-	base/threading/simple_thread.cc
-	base/threading/platform_thread.cc
-	base/threading/scoped_blocking_call.cc
 	base/threading/thread_local_storage.cc
-	base/threading/post_task_and_reply_impl.cc
 	base/json/json_writer.cc
 	base/json/string_escape.cc
 	base/json/json_value_converter.cc
@@ -103,44 +45,11 @@ set(SRCS
 	base/json/json_string_value_serializer.cc
 	base/sequence_checker_impl.cc
 	base/hash/sha1.cc
-	base/hash/hash.cc
 	base/hash/md5_boringssl.cc
 	base/pending_task.cc
-	base/files/memory_mapped_file.cc
-	base/files/file_util_linux.cc
-	base/files/file_tracing.cc
-	base/files/file_util_posix.cc
-	base/files/file_path.cc
-	base/files/file_enumerator.cc
-	base/files/scoped_file.cc
-	base/files/file_path_constants.cc
-	base/files/file_posix.cc
-	base/files/file_enumerator_posix.cc
-	base/files/file_util.cc
-	base/files/file.cc
-	base/files/memory_mapped_file_posix.cc
-	base/logging.cc
 	base/posix/safe_strerror.cc
-	base/posix/global_descriptors.cc
-	base/posix/file_descriptor_shuffle.cc
 	base/posix/can_lower_nice_to.cc
-	base/process/environment_internal.cc
-	base/process/launch.cc
-	base/process/process_handle.cc
-	base/process/process_metrics_posix.cc
-	base/process/process_iterator.cc
-	base/process/launch_posix.cc
-	base/process/process_handle_linux.cc
-	base/process/process_handle_posix.cc
-	base/process/process_posix.cc
-	base/process/process_metrics_linux.cc
-	base/process/internal_linux.cc
-	base/process/process_iterator_linux.cc
-	base/process/process_metrics.cc
-	base/unguessable_token.cc
 	base/vlog.cc
-	base/rand_util_posix.cc
-	base/command_line.cc
 	base/strings/string_util.cc
 	base/strings/string_util_constants.cc
 	base/strings/strcat.cc
@@ -153,63 +62,9 @@ set(SRCS
 	base/strings/pattern.cc
 	base/strings/string16.cc
 	base/strings/string_number_conversions.cc
-	base/memory/protected_memory.cc
-	base/memory/shared_memory_mapping.cc
-	base/memory/fake_memory_pressure_monitor.cc
-	base/memory/shared_memory_handle_posix.cc
-	base/memory/weak_ptr.cc
-	base/memory/memory_pressure_listener.cc
-	base/memory/memory_pressure_monitor.cc
-	base/memory/ref_counted.cc
-	base/memory/read_only_shared_memory_region.cc
-	base/memory/discardable_memory_allocator.cc
-	base/memory/shared_memory_tracker.cc
-	base/memory/aligned_memory.cc
-	base/memory/ref_counted_memory.cc
-	base/memory/discardable_memory.cc
-	base/memory/shared_memory_handle.cc
-	base/memory/shared_memory_helper.cc
-	base/memory/platform_shared_memory_region.cc
-	base/memory/platform_shared_memory_region_posix.cc
-	base/memory/protected_memory_posix.cc
 	base/containers/intrusive_heap.cc
-	base/task/thread_pool/pooled_single_thread_task_runner_manager.cc
-	base/task/thread_pool/delayed_task_manager.cc
-	base/task/thread_pool/service_thread.cc
-	base/task/thread_pool/job_task_source.cc
-	base/task/thread_pool/worker_thread_stack.cc
-	base/task/thread_pool/sequence_sort_key.cc
-	base/task/thread_pool/pooled_parallel_task_runner.cc
-	base/task/thread_pool/sequence.cc
-	base/task/thread_pool/thread_group_impl.cc
-	base/task/thread_pool/thread_pool_instance.cc
-	base/task/thread_pool/thread_group.cc
-	base/task/thread_pool/pooled_task_runner_delegate.cc
-	base/task/thread_pool/pooled_sequenced_task_runner.cc
-	base/task/thread_pool/task_source.cc
-	base/task/thread_pool/task_tracker_posix.cc
-	base/task/thread_pool/thread_pool_impl.cc
-	base/task/thread_pool/worker_thread.cc
 	base/task/thread_pool/task.cc
-	base/task/thread_pool/priority_queue.cc
-	base/task/thread_pool/environment_config.cc
-	base/task/thread_pool/task_tracker.cc
-	base/task/task_executor.cc
-	base/task/promise/promise_executor.cc
-	base/task/promise/no_op_promise_executor.cc
-	base/task/promise/promise_value.cc
-	base/task/promise/helpers.cc
-	base/task/promise/dependent_list.cc
-	base/task/promise/abstract_promise.cc
-	base/task/post_task.cc
-	base/task/scoped_set_task_priority_for_current_thread.cc
-	base/task/common/checked_lock_impl.cc
 	base/task/common/task_annotator.cc
-	base/task/post_job.cc
-	base/task/task_traits.cc
-	base/task/task_features.cc
-	base/feature_list.cc
-	base/timer/timer.cc
 	third_party/re2/src/util/strutil.cc
 	third_party/re2/src/util/rune.cc
 	third_party/re2/src/re2/parse.cc
@@ -252,17 +107,11 @@ set(SRCS
 	url/url_canon_fileurl.cc
 	url/url_constants.cc
 	url/gurl.cc
-	mojo/public/c/system/thunks.cc
 	mojo/public/cpp/bindings/lib/array_internal.cc
-	mojo/public/cpp/bindings/lib/buffer.cc
-	mojo/public/cpp/bindings/lib/scoped_interface_endpoint_handle.cc
 	mojo/public/cpp/bindings/lib/validation_context.cc
 	mojo/public/cpp/bindings/lib/message_internal.cc
-	mojo/public/cpp/bindings/lib/message.cc
 	mojo/public/cpp/bindings/lib/validation_errors.cc
-	mojo/public/cpp/bindings/lib/serialization_context.cc
 	mojo/public/cpp/bindings/lib/validation_util.cc
-	mojo/public/cpp/bindings/connection_group.cc
 	mojo/public/mojom/base/big_buffer.mojom-shared.cc
 	mojo/public/mojom/base/file_path.mojom-shared.cc
 	mojo/public/mojom/base/time.mojom-shared.cc

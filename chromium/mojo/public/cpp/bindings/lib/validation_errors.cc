@@ -66,32 +66,32 @@ const char* ValidationErrorToString(ValidationError error) {
 void ReportValidationError(ValidationContext* context,
                            ValidationError error,
                            const char* description) {
-  if (g_validation_error_observer) {
-    g_validation_error_observer->set_last_error(error);
-    return;
-  }
-
-  if (description) {
-    if (!g_suppress_logging) {
-      LOG(ERROR) << "Invalid message: " << ValidationErrorToString(error)
-                 << " (" << description << ")";
-    }
-    if (context->message()) {
-      context->message()->NotifyBadMessage(
-          base::StringPrintf("Validation failed for %s [%s (%s)]",
-                             context->description().data(),
-                             ValidationErrorToString(error), description));
-    }
-  } else {
-    if (!g_suppress_logging)
-      LOG(ERROR) << "Invalid message: " << ValidationErrorToString(error);
-    if (context->message()) {
-      context->message()->NotifyBadMessage(
-          base::StringPrintf("Validation failed for %s [%s]",
-                             context->description().data(),
-                             ValidationErrorToString(error)));
-    }
-  }
+//  if (g_validation_error_observer) {
+//    g_validation_error_observer->set_last_error(error);
+//    return;
+//  }
+//
+//  if (description) {
+//    if (!g_suppress_logging) {
+//      LOG(ERROR) << "Invalid message: " << ValidationErrorToString(error)
+//                 << " (" << description << ")";
+//    }
+//    if (context->message()) {
+//      context->message()->NotifyBadMessage(
+//          base::StringPrintf("Validation failed for %s [%s (%s)]",
+//                             context->description().data(),
+//                             ValidationErrorToString(error), description));
+//    }
+//  } else {
+//    if (!g_suppress_logging)
+//      LOG(ERROR) << "Invalid message: " << ValidationErrorToString(error);
+//    if (context->message()) {
+//      context->message()->NotifyBadMessage(
+//          base::StringPrintf("Validation failed for %s [%s]",
+//                             context->description().data(),
+//                             ValidationErrorToString(error)));
+//    }
+//  }
 }
 
 void ReportValidationErrorForMessage(mojo::Message* message,

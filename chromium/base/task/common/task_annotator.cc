@@ -135,7 +135,7 @@ void TaskAnnotator::RunTask(const char* trace_event_name,
             pending_task->task_backtrace.end(), task_backtrace.begin() + 2);
   task_backtrace[kStackTaskTraceSnapshotSize - 2] =
       reinterpret_cast<void*>(pending_task->ipc_hash);
-  debug::Alias(&task_backtrace);
+  //debug::Alias(&task_backtrace);
 
   auto* tls = GetTLSForCurrentPendingTask();
   auto* previous_pending_task = tls->Get();

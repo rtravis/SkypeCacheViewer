@@ -1,4 +1,6 @@
 *~
 *.swp
 /build/
+/Debug/
+/Release/
 /.vscode/settings.json

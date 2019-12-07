@@ -547,7 +547,7 @@ class CheckOpResult {
 // We make sure CHECK et al. always evaluates their arguments, as
 // doing CHECK(FunctionWithSideEffect()) is a common idiom.
 
-#if defined(OFFICIAL_BUILD) && defined(NDEBUG)
+#if 1 // ???? defined(OFFICIAL_BUILD) && defined(NDEBUG)
 
 // Make all CHECK functions discard their log strings to reduce code bloat, and
 // improve performance, for official release builds.

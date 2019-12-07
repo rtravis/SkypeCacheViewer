@@ -39,18 +39,18 @@ struct Serializer<AssociatedInterfacePtrInfoDataView<Base>,
                                         output);
   }
 
-  static bool Deserialize(AssociatedInterface_Data* input,
-                          AssociatedInterfacePtrInfo<T>* output,
-                          SerializationContext* context) {
-    auto handle = context->TakeAssociatedEndpointHandle(input->handle);
-    if (!handle.is_valid()) {
-      *output = AssociatedInterfacePtrInfo<T>();
-    } else {
-      output->set_handle(std::move(handle));
-      output->set_version(input->version);
-    }
-    return true;
-  }
+//  static bool Deserialize(AssociatedInterface_Data* input,
+//                          AssociatedInterfacePtrInfo<T>* output,
+//                          SerializationContext* context) {
+//    auto handle = context->TakeAssociatedEndpointHandle(input->handle);
+//    if (!handle.is_valid()) {
+//      *output = AssociatedInterfacePtrInfo<T>();
+//    } else {
+//      output->set_handle(std::move(handle));
+//      output->set_version(input->version);
+//    }
+//    return true;
+//  }
 };
 
 template <typename Base, typename T>
@@ -66,18 +66,18 @@ struct Serializer<AssociatedInterfacePtrInfoDataView<Base>,
                                         output);
   }
 
-  static bool Deserialize(AssociatedInterface_Data* input,
-                          PendingAssociatedRemote<T>* output,
-                          SerializationContext* context) {
-    auto handle = context->TakeAssociatedEndpointHandle(input->handle);
-    if (!handle.is_valid()) {
-      *output = PendingAssociatedRemote<T>();
-    } else {
-      output->set_handle(std::move(handle));
-      output->set_version(input->version);
-    }
-    return true;
-  }
+//  static bool Deserialize(AssociatedInterface_Data* input,
+//                          PendingAssociatedRemote<T>* output,
+//                          SerializationContext* context) {
+//    auto handle = context->TakeAssociatedEndpointHandle(input->handle);
+//    if (!handle.is_valid()) {
+//      *output = PendingAssociatedRemote<T>();
+//    } else {
+//      output->set_handle(std::move(handle));
+//      output->set_version(input->version);
+//    }
+//    return true;
+//  }
 };
 
 template <typename Base, typename T>
@@ -92,16 +92,16 @@ struct Serializer<AssociatedInterfaceRequestDataView<Base>,
     context->AddAssociatedEndpoint(input.PassHandle(), output);
   }
 
-  static bool Deserialize(AssociatedEndpointHandle_Data* input,
-                          AssociatedInterfaceRequest<T>* output,
-                          SerializationContext* context) {
-    auto handle = context->TakeAssociatedEndpointHandle(*input);
-    if (!handle.is_valid())
-      *output = AssociatedInterfaceRequest<T>();
-    else
-      *output = AssociatedInterfaceRequest<T>(std::move(handle));
-    return true;
-  }
+//  static bool Deserialize(AssociatedEndpointHandle_Data* input,
+//                          AssociatedInterfaceRequest<T>* output,
+//                          SerializationContext* context) {
+//    auto handle = context->TakeAssociatedEndpointHandle(*input);
+//    if (!handle.is_valid())
+//      *output = AssociatedInterfaceRequest<T>();
+//    else
+//      *output = AssociatedInterfaceRequest<T>(std::move(handle));
+//    return true;
+//  }
 };
 
 template <typename Base, typename T>
@@ -116,16 +116,16 @@ struct Serializer<AssociatedInterfaceRequestDataView<Base>,
     context->AddAssociatedEndpoint(input.PassHandle(), output);
   }
 
-  static bool Deserialize(AssociatedEndpointHandle_Data* input,
-                          PendingAssociatedReceiver<T>* output,
-                          SerializationContext* context) {
-    auto handle = context->TakeAssociatedEndpointHandle(*input);
-    if (!handle.is_valid())
-      *output = PendingAssociatedReceiver<T>();
-    else
-      *output = PendingAssociatedReceiver<T>(std::move(handle));
-    return true;
-  }
+//  static bool Deserialize(AssociatedEndpointHandle_Data* input,
+//                          PendingAssociatedReceiver<T>* output,
+//                          SerializationContext* context) {
+//    auto handle = context->TakeAssociatedEndpointHandle(*input);
+//    if (!handle.is_valid())
+//      *output = PendingAssociatedReceiver<T>();
+//    else
+//      *output = PendingAssociatedReceiver<T>(std::move(handle));
+//    return true;
+//  }
 };
 
 template <typename Base, typename T>
