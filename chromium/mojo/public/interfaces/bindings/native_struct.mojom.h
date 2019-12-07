@@ -18,9 +18,9 @@
 #include "base/optional.h"
 
 #include "mojo/public/cpp/bindings/mojo_buildflags.h"
-#if BUILDFLAG(MOJO_TRACE_ENABLED)
-#include "base/trace_event/trace_event.h"
-#endif
+//#if BUILDFLAG(MOJO_TRACE_ENABLED)
+//#include "base/trace_event/trace_event.h"
+//#endif
 #include "mojo/public/cpp/bindings/clone_traits.h"
 #include "mojo/public/cpp/bindings/equals_traits.h"
 #include "mojo/public/cpp/bindings/lib/serialization.h"

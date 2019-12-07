@@ -16,8 +16,8 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
-#include "base/sequence_checker.h"
-#include "base/threading/thread_collision_warner.h"
+//#include "base/sequence_checker.h"
+//#include "base/threading/thread_collision_warner.h"
 #include "build/build_config.h"
 
 namespace base {
@@ -146,7 +146,7 @@ class BASE_EXPORT RefCountedBase {
   mutable SequenceChecker sequence_checker_;
 #endif
 
-  DFAKE_MUTEX(add_release_);
+  //DFAKE_MUTEX(add_release_);
 
   DISALLOW_COPY_AND_ASSIGN(RefCountedBase);
 };

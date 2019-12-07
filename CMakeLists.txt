@@ -19,7 +19,6 @@ target_link_libraries(${PROJECT_NAME}
 	leveldb_chromium_comparator
 	leveldb
 	pthread
-	crypto
 	)
 
 target_include_directories(${PROJECT_NAME} PUBLIC

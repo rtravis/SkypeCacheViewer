@@ -13,10 +13,10 @@
 #include "base/component_export.h"
 #include "base/containers/stack_container.h"
 #include "base/macros.h"
-#include "mojo/public/cpp/bindings/connection_group.h"
+//#include "mojo/public/cpp/bindings/connection_group.h"
 #include "mojo/public/cpp/bindings/lib/bindings_internal.h"
-#include "mojo/public/cpp/bindings/lib/pending_receiver_state.h"
-#include "mojo/public/cpp/bindings/scoped_interface_endpoint_handle.h"
+//#include "mojo/public/cpp/bindings/lib/pending_receiver_state.h"
+//#include "mojo/public/cpp/bindings/scoped_interface_endpoint_handle.h"
 #include "mojo/public/cpp/system/handle.h"
 
 namespace mojo {
@@ -44,30 +44,30 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS_BASE) SerializationContext {
   // Adds an associated interface endpoint (for e.g. an
   // AssociatedInterfaceRequest) to this context and outputs its serialized form
   // in |*out_data|.
-  void AddAssociatedEndpoint(ScopedInterfaceEndpointHandle handle,
-                             AssociatedEndpointHandle_Data* out_data);
+//  void AddAssociatedEndpoint(ScopedInterfaceEndpointHandle handle,
+//                             AssociatedEndpointHandle_Data* out_data);
 
   // Adds an associated interface info to associated endpoint handle and version
   // data lists and outputs its serialized form in |*out_data|.
-  void AddAssociatedInterfaceInfo(ScopedInterfaceEndpointHandle handle,
-                                  uint32_t version,
-                                  AssociatedInterface_Data* out_data);
+//  void AddAssociatedInterfaceInfo(ScopedInterfaceEndpointHandle handle,
+//                                  uint32_t version,
+//                                  AssociatedInterface_Data* out_data);
 
-  const ConnectionGroup::Ref* receiver_connection_group() const {
-    return receiver_connection_group_;
-  }
+//  const ConnectionGroup::Ref* receiver_connection_group() const {
+//    return receiver_connection_group_;
+//  }
 
   const std::vector<mojo::ScopedHandle>* handles() { return &handles_; }
   std::vector<mojo::ScopedHandle>* mutable_handles() { return &handles_; }
 
-  const std::vector<ScopedInterfaceEndpointHandle>*
-  associated_endpoint_handles() const {
-    return &associated_endpoint_handles_;
-  }
-  std::vector<ScopedInterfaceEndpointHandle>*
-  mutable_associated_endpoint_handles() {
-    return &associated_endpoint_handles_;
-  }
+//  const std::vector<ScopedInterfaceEndpointHandle>*
+//  associated_endpoint_handles() const {
+//    return &associated_endpoint_handles_;
+//  }
+//  std::vector<ScopedInterfaceEndpointHandle>*
+//  mutable_associated_endpoint_handles() {
+//    return &associated_endpoint_handles_;
+//  }
 
   // Takes handles from a received Message object and assumes ownership of them.
   // Individual handles can be extracted using Take* methods below.
@@ -85,16 +85,16 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS_BASE) SerializationContext {
 
   // Takes a handle from the list of serialized handle data and stuffs it into
   // the internal data of an InterfaceRequest or PendingReceiver.
-  void TakeHandleAsReceiver(const Handle_Data& encoded_handle,
-                            PendingReceiverState* receiver_state);
+//  void TakeHandleAsReceiver(const Handle_Data& encoded_handle,
+//                            PendingReceiverState* receiver_state);
 
-  mojo::ScopedInterfaceEndpointHandle TakeAssociatedEndpointHandle(
-      const AssociatedEndpointHandle_Data& encoded_handle);
+//  mojo::ScopedInterfaceEndpointHandle TakeAssociatedEndpointHandle(
+//      const AssociatedEndpointHandle_Data& encoded_handle);
 
  private:
   // The ConnectionGroup to which deserialized PendingReceivers should be added,
   // if any.
-  const ConnectionGroup::Ref* receiver_connection_group_ = nullptr;
+  //const ConnectionGroup::Ref* receiver_connection_group_ = nullptr;
 
   // Handles owned by this object. Used during serialization to hold onto
   // handles accumulated during pre-serialization, and used during
@@ -102,7 +102,7 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS_BASE) SerializationContext {
   std::vector<mojo::ScopedHandle> handles_;
 
   // Stashes ScopedInterfaceEndpointHandles encoded in a message by index.
-  std::vector<ScopedInterfaceEndpointHandle> associated_endpoint_handles_;
+//  std::vector<ScopedInterfaceEndpointHandle> associated_endpoint_handles_;
 
   DISALLOW_COPY_AND_ASSIGN(SerializationContext);
 };

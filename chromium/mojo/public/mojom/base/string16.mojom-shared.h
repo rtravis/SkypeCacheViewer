@@ -25,7 +25,7 @@
 #include "mojo/public/cpp/bindings/string_data_view.h"
 #include "mojo/public/mojom/base/string16.mojom-shared-internal.h"
 #include "mojo/public/mojom/base/big_buffer.mojom-shared.h"
-#include "mojo/public/cpp/bindings/lib/interface_serialization.h"
+//#include "mojo/public/cpp/bindings/lib/interface_serialization.h"
 
 
 #include "mojo/public/cpp/bindings/native_enum.h"

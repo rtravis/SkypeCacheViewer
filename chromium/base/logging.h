@@ -16,13 +16,13 @@
 #include <utility>
 
 #include "base/base_export.h"
-#include "base/callback_forward.h"
+//#include "base/callback_forward.h"
 #include "base/compiler_specific.h"
 #include "base/immediate_crash.h"
-#include "base/logging_buildflags.h"
+//#include "base/logging_buildflags.h"
 #include "base/macros.h"
-#include "base/scoped_clear_last_error.h"
-#include "base/strings/string_piece_forward.h"
+//#include "base/scoped_clear_last_error.h"
+//#include "base/strings/string_piece_forward.h"
 #include "base/template_util.h"
 #include "build/build_config.h"
 
@@ -314,20 +314,20 @@ BASE_EXPORT void SetShowErrorDialogs(bool enable_dialogs);
 // The default handler shows a dialog box and then terminate the process,
 // however clients can use this function to override with their own handling
 // (e.g. a silent one for Unit Tests)
-using LogAssertHandlerFunction =
-    base::RepeatingCallback<void(const char* file,
-                                 int line,
-                                 const base::StringPiece message,
-                                 const base::StringPiece stack_trace)>;
+//using LogAssertHandlerFunction =
+//    base::RepeatingCallback<void(const char* file,
+//                                 int line,
+//                                 const base::StringPiece message,
+//                                 const base::StringPiece stack_trace)>;
 
-class BASE_EXPORT ScopedLogAssertHandler {
- public:
-  explicit ScopedLogAssertHandler(LogAssertHandlerFunction handler);
-  ~ScopedLogAssertHandler();
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ScopedLogAssertHandler);
-};
+//class BASE_EXPORT ScopedLogAssertHandler {
+// public:
+//  explicit ScopedLogAssertHandler(LogAssertHandlerFunction handler);
+//  ~ScopedLogAssertHandler();
+//
+// private:
+//  DISALLOW_COPY_AND_ASSIGN(ScopedLogAssertHandler);
+//};
 
 // Sets the Log Message Handler that gets passed every log message before
 // it's sent to other log destinations (if any).
@@ -864,16 +864,16 @@ const LogSeverity LOG_DCHECK = LOG_FATAL;
 #define DCHECK_GE(val1, val2) DCHECK_OP(GE, >=, val1, val2)
 #define DCHECK_GT(val1, val2) DCHECK_OP(GT, > , val1, val2)
 
-#if BUILDFLAG(ENABLE_LOG_ERROR_NOT_REACHED)
-// Implement logging of NOTREACHED() as a dedicated function to get function
-// call overhead down to a minimum.
-void LogErrorNotReached(const char* file, int line);
-#define NOTREACHED()                                       \
-  true ? ::logging::LogErrorNotReached(__FILE__, __LINE__) \
-       : EAT_STREAM_PARAMETERS
-#else
+//#if BUILDFLAG(ENABLE_LOG_ERROR_NOT_REACHED)
+//// Implement logging of NOTREACHED() as a dedicated function to get function
+//// call overhead down to a minimum.
+//void LogErrorNotReached(const char* file, int line);
+//#define NOTREACHED()                                       \---
+//  true ? ::logging::LogErrorNotReached(__FILE__, __LINE__) \---
+//       : EAT_STREAM_PARAMETERS
+//#else
 #define NOTREACHED() DCHECK(false)
-#endif
+//#endif
 
 // Redefine the standard assert to use our nice log files
 #undef assert
@@ -924,7 +924,7 @@ class BASE_EXPORT LogMessage {
   // This is useful since the LogMessage class uses a lot of Win32 calls
   // that will lose the value of GLE and the code that called the log function
   // will have lost the thread error value when the log call returns.
-  base::internal::ScopedClearLastError last_error_;
+  //base::internal::ScopedClearLastError last_error_;
 
   DISALLOW_COPY_AND_ASSIGN(LogMessage);
 };

@@ -6,8 +6,7 @@ LevelDB database.
 ## Building
 
 A POSIX compliant system (such as GNU/Linux) is required and
-additionally the following libraries are needed: pthread, crypto
-(OpenSSL) and leveldb.
+additionally the following libraries are needed: pthread and leveldb.
 
 The command line executable can be built using CMake:
 

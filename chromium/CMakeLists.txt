@@ -1,27 +1,6 @@
 
 set(SRCS
-	storage/common/database/database_identifier.cc
-	base/callback_helpers.cc
-	base/sequence_token.cc
-	base/callback_internal.cc
-	base/observer_list_threadsafe.cc
-	base/time/time_exploded_posix.cc
-	base/time/time.cc
-	base/time/default_clock.cc
-	base/time/tick_clock.cc
-	base/time/clock.cc
-	base/time/time_now_posix.cc
-	base/time/time_conversion_posix.cc
-	base/time/default_tick_clock.cc
-	base/base_switches.cc
-	base/at_exit.cc
-	base/environment.cc
-	base/synchronization/atomic_flag.cc
-	base/synchronization/lock_impl_posix.cc
-	base/synchronization/lock.cc
-	base/third_party/nspr/prtime.cc
 	base/third_party/icu/icu_utf.cc
-	base/third_party/cityhash/city.cc
 	base/third_party/double_conversion/double-conversion/double-to-string.cc
 	base/third_party/double_conversion/double-conversion/bignum-dtoa.cc
 	base/third_party/double_conversion/double-conversion/strtod.cc
@@ -30,98 +9,24 @@ set(SRCS
 	base/third_party/double_conversion/double-conversion/bignum.cc
 	base/third_party/double_conversion/double-conversion/fast-dtoa.cc
 	base/third_party/double_conversion/double-conversion/cached-powers.cc
-	base/location.cc
-	base/pickle.cc
 	base/value_iterators.cc
 	base/values.cc
-	base/threading/thread_restrictions.cc
-	base/threading/thread_local_storage_posix.cc
-	base/threading/thread_local_storage.cc
 	base/json/json_writer.cc
 	base/json/string_escape.cc
-	base/json/json_value_converter.cc
-	base/json/json_reader.cc
-	base/json/json_parser.cc
-	base/json/json_string_value_serializer.cc
-	base/sequence_checker_impl.cc
-	base/hash/sha1.cc
-	base/hash/md5_boringssl.cc
-	base/pending_task.cc
-	base/posix/safe_strerror.cc
-	base/posix/can_lower_nice_to.cc
-	base/vlog.cc
 	base/strings/string_util.cc
 	base/strings/string_util_constants.cc
-	base/strings/strcat.cc
 	base/strings/utf_string_conversions.cc
 	base/strings/utf_string_conversion_utils.cc
 	base/strings/stringprintf.cc
-	base/strings/string_split.cc
 	base/strings/string_piece.cc
 	base/strings/sys_string_conversions_posix.cc
-	base/strings/pattern.cc
 	base/strings/string16.cc
 	base/strings/string_number_conversions.cc
-	base/containers/intrusive_heap.cc
-	base/task/thread_pool/task.cc
-	base/task/common/task_annotator.cc
-	third_party/re2/src/util/strutil.cc
-	third_party/re2/src/util/rune.cc
-	third_party/re2/src/re2/parse.cc
-	third_party/re2/src/re2/perl_groups.cc
-	third_party/re2/src/re2/prog.cc
-	third_party/re2/src/re2/unicode_groups.cc
-	third_party/re2/src/re2/bitstate.cc
-	third_party/re2/src/re2/re2.cc
-	third_party/re2/src/re2/unicode_casefold.cc
-	third_party/re2/src/re2/dfa.cc
-	third_party/re2/src/re2/compile.cc
-	third_party/re2/src/re2/nfa.cc
-	third_party/re2/src/re2/regexp.cc
-	third_party/re2/src/re2/stringpiece.cc
-	third_party/re2/src/re2/tostring.cc
-	third_party/re2/src/re2/onepass.cc
-	third_party/re2/src/re2/simplify.cc
-	third_party/blink/public/mojom/indexeddb/indexeddb.mojom-shared.cc
 	third_party/blink/common/indexeddb/indexeddb_key_path.cc
 	third_party/blink/common/indexeddb/indexeddb_key.cc
-	url/url_canon_relative.cc
-	url/url_canon.cc
-	url/url_parse_file.cc
-	url/scheme_host_port.cc
-	url/url_canon_host.cc
-	url/third_party/mozilla/url_parse.cc
-	url/url_canon_path.cc
-	url/url_canon_filesystemurl.cc
-	url/url_canon_etc.cc
-	url/url_idna_icu.cc
-	url/url_canon_internal.cc
-	url/url_canon_ip.cc
-	url/url_canon_query.cc
-	url/url_canon_mailtourl.cc
-	url/url_canon_pathurl.cc
-	url/url_util.cc
-	url/url_canon_stdstring.cc
-	url/url_canon_icu.cc
-	url/url_canon_stdurl.cc
-	url/url_canon_fileurl.cc
-	url/url_constants.cc
-	url/gurl.cc
-	mojo/public/cpp/bindings/lib/array_internal.cc
-	mojo/public/cpp/bindings/lib/validation_context.cc
-	mojo/public/cpp/bindings/lib/message_internal.cc
-	mojo/public/cpp/bindings/lib/validation_errors.cc
-	mojo/public/cpp/bindings/lib/validation_util.cc
-	mojo/public/mojom/base/big_buffer.mojom-shared.cc
-	mojo/public/mojom/base/file_path.mojom-shared.cc
-	mojo/public/mojom/base/time.mojom-shared.cc
-	mojo/public/mojom/base/string16.mojom-shared.cc
 	content/browser/indexed_db/indexed_db_leveldb_coding.cc
 	content/browser/indexed_db/indexed_db_leveldb_operations.cc
 	)
 
 	add_library(leveldb_chromium_comparator ${SRCS})
-	target_include_directories(leveldb_chromium_comparator PUBLIC
-		.
-		third_party/re2/src
-		)
+	target_include_directories(leveldb_chromium_comparator PUBLIC .)
