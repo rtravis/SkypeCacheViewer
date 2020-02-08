@@ -75,38 +75,132 @@ static bool scan_leveldb(const char *dbPath, Function scanFunction)
 	return ok;
 }
 
-struct UnitType : std::monostate
+namespace parse_result {
+
+struct Unit : std::monostate
 {
 };
 
-struct SentinelType // signal the end of parsing of an object or of an array
+struct ValueSentinel // signal the end of parsing of an object or of an array
 {
 };
 
-class ValueType
+class Value
 {
 public:
-	using KeyValuePairs = std::vector<std::pair<std::string, ValueType>>;
-	using Values = std::vector<ValueType>;
-	using ValuePairs = std::vector<std::pair<ValueType, ValueType>>;
+	using KeyValuePairs = std::vector<std::pair<std::string, Value>>;
+	using Values = std::vector<Value>;
+	using ValuePairs = std::vector<std::pair<Value, Value>>;
 
 	using KeyValuePairsPtr = std::unique_ptr<KeyValuePairs>;
 	using ValuesPtr = std::unique_ptr<Values>;
 	using ValuePairsPtr = std::unique_ptr<ValuePairs>;
 
-	using Variant = std::variant<UnitType, bool, int, uint64_t, std::string,
-			KeyValuePairsPtr, ValuesPtr, ValuePairsPtr, SentinelType>;
+	using Variant = std::variant<
+						Unit,
+						bool,
+						int,
+						uint64_t,
+						std::string,
+						KeyValuePairsPtr,
+						ValuesPtr,
+						ValuePairsPtr,
+						ValueSentinel>;
 
-	ValueType() = default;
-	ValueType(Variant &&v) : vt_(std::move(v)) {}
+	Value() = default;
+	Value(Variant &&v) : vt_(std::move(v)) {}
 
-	ValueType(const ValueType&) = delete;
-	ValueType &operator=(const ValueType&) = delete;
-	ValueType(ValueType &&) = default;
-	ValueType &operator=(ValueType &&) = default;
+	Value(const Value&) = delete;
+	Value &operator=(const Value&) = delete;
+	Value(Value &&) = default;
+	Value &operator=(Value &&) = default;
 
 	Variant vt_;
 };
+
+using std::cout;
+
+struct Visitor
+{
+	int indent_ = 0;
+
+	void indent()
+	{
+		for (int i = 0; i < indent_; ++i) {
+			cout << "    ";
+		}
+	}
+
+	void operator()(bool v) const {
+		cout << (v ? "True" : "False");
+	}
+
+	void operator()(int v) const {
+		cout << v;
+	}
+
+	void operator()(uint64_t v) const {
+		cout << v;
+	}
+
+	void operator()(const std::string &v) const {
+		cout << v;
+	}
+
+	void operator()(Unit) const {
+		cout << "Null";
+	}
+
+	void operator()(ValueSentinel) const {
+		cout << "End";
+	}
+
+	void operator()(const Value::KeyValuePairsPtr &kvs) {
+		cout << '\n';
+		indent_++;
+		for (auto const &[k, v] : *kvs.get()) {
+			indent();
+			cout << k << '=';
+			std::visit(*this, v.vt_);
+			cout << '\n';
+		}
+		indent_--;
+	}
+
+	void operator()(const Value::ValuesPtr &vs) {
+		cout << '\n';
+		indent_++;
+		for (auto &v : *vs.get()) {
+			indent();
+			std::visit(*this, v.vt_);
+			cout << '\n';
+		}
+		indent_--;
+	}
+
+	void operator()(const Value::ValuePairsPtr &ps) {
+		indent_++;
+		for (auto &[k, v] : *ps.get()) {
+			indent();
+			std::visit(*this, v.vt_);
+			cout << '\n';
+		}
+		indent_--;
+	}
+};
+
+} // namespace parse_result
+
+namespace parsers {
+
+using namespace parse_result;
+
+namespace new_parsers {
+
+template <class State, class Result>
+using Parser = std::optional<std::pair<Result, State>>(*)(State);
+
+} // namespace new_parsers
 
 static size_t parseVarInt(const uint8_t **p, const uint8_t *const pend)
 {
@@ -136,7 +230,7 @@ static size_t parseVarInt(const uint8_t **p, const uint8_t *const pend)
 	return res;
 }
 
-static ValueType parseString(const uint8_t **p, const uint8_t *const pend)
+static Value parseString(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
 	// expect *i == '"'
@@ -147,10 +241,10 @@ static ValueType parseString(const uint8_t **p, const uint8_t *const pend)
 	std::string result(i, i + len);
 	i += len;
 	*p = i;
-	return ValueType(result);
+	return Value(result);
 }
 
-static ValueType parseUtf16String(const uint8_t **p, const uint8_t *const pend)
+static Value parseUtf16String(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
 	// expect *i == '"'
@@ -162,12 +256,12 @@ static ValueType parseUtf16String(const uint8_t **p, const uint8_t *const pend)
 	auto stringData = reinterpret_cast<const char16_t*>(i);
 	i += len;
 	*p = i;
-	return ValueType(std::wstring_convert<
+	return Value(std::wstring_convert<
 			std::codecvt_utf8_utf16<char16_t>, char16_t>().to_bytes(
 			stringData, stringData + len / sizeof(char16_t)));
 }
 
-static ValueType parse64BitInt(const uint8_t **p, const uint8_t *const pend)
+static Value parse64BitInt(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
 	// expect *i == 'N'
@@ -178,10 +272,10 @@ static ValueType parse64BitInt(const uint8_t **p, const uint8_t *const pend)
 	memcpy(&result, i, 8);
 	i += 8;
 	*p = i;
-	return ValueType(result);
+	return Value(result);
 }
 
-static ValueType parseInt(const uint8_t **p, const uint8_t *const pend)
+static Value parseInt(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
 	// expect *i == '"'
@@ -191,20 +285,20 @@ static ValueType parseInt(const uint8_t **p, const uint8_t *const pend)
 	// TODO: what about signed integers?
 	int result = (int) parseVarInt(&i, pend);
 	*p = i;
-	return ValueType(result);
+	return Value(result);
 }
 
-static ValueType parseNull(const uint8_t **p, const uint8_t *const pend)
+static Value parseNull(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
 	// expect *i == 'N'
 	assert(*i == '_');
 	i++;
 	*p = i;
-	return ValueType();
+	return Value();
 }
 
-static ValueType parseBool(const uint8_t **p, const uint8_t *const pend)
+static Value parseBool(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
 	// expect *i == 'F' or 'T'
@@ -212,10 +306,10 @@ static ValueType parseBool(const uint8_t **p, const uint8_t *const pend)
 	bool result = *i == 'T';
 	i++;
 	*p = i;
-	return ValueType(result);
+	return Value(result);
 }
 
-static ValueType parseArrayClosingTag(const uint8_t **p, const uint8_t *const pend)
+static Value parseArrayClosingTag(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
 	// expect *i == '$'
@@ -224,36 +318,36 @@ static ValueType parseArrayClosingTag(const uint8_t **p, const uint8_t *const pe
 	assert(*i == '\x00');
 	i += 2;
 	*p = i;
-	return ValueType(SentinelType());
+	return Value(ValueSentinel());
 }
 
-static ValueType parseArray2ClosingTag(const uint8_t **p, const uint8_t *const pend)
+static Value parseArray2ClosingTag(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
 	// expect *i == '@'
 	assert(*i == '@');
 	i += 3;
 	*p = i;
-	return ValueType(SentinelType());
+	return Value(ValueSentinel());
 }
 
-static ValueType parseObjectClosingTag(const uint8_t **p, const uint8_t *const pend)
+static Value parseObjectClosingTag(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
 	// expect *i == '{'
 	assert(*i == '{');
 	i += 2;
 	*p = i;
-	return ValueType(SentinelType());
+	return Value(ValueSentinel());
 }
 
 // forward declaration
-static ValueType parseObject(const uint8_t **p, const uint8_t *const pend);
-static ValueType parseArray(const uint8_t **p, const uint8_t *const pend);
-static ValueType parseArray2(const uint8_t **p, const uint8_t *const pend);
-static ValueType parseKey(const uint8_t **p, const uint8_t *const pend);
+static Value parseObject(const uint8_t **p, const uint8_t *const pend);
+static Value parseArray(const uint8_t **p, const uint8_t *const pend);
+static Value parseArray2(const uint8_t **p, const uint8_t *const pend);
+static Value parseKey(const uint8_t **p, const uint8_t *const pend);
 
-static ValueType parseVal(const uint8_t **p, const uint8_t *const pend)
+static Value parseVal(const uint8_t **p, const uint8_t *const pend)
 {
 	uint8_t tag = **p;
 	switch (tag) {
@@ -291,23 +385,23 @@ static ValueType parseVal(const uint8_t **p, const uint8_t *const pend)
 	}
 }
 
-static ValueType parseKey(const uint8_t **p, const uint8_t *const pend)
+static Value parseKey(const uint8_t **p, const uint8_t *const pend)
 {
 	// returned object should be either string or object terminator sentinel
 	return parseVal(p, pend);
 }
 
-static ValueType parseObject(const uint8_t **p, const uint8_t *const pend)
+static Value parseObject(const uint8_t **p, const uint8_t *const pend)
 {
 	// expect **p == 'o'
 	assert(**p == 'o');
 	(*p)++;
 
-	ValueType result(std::make_unique<ValueType::KeyValuePairs>());
-	ValueType k;
-	ValueType v;
+	Value result(std::make_unique<Value::KeyValuePairs>());
+	Value k;
+	Value v;
 
-	ValueType::KeyValuePairs *ps = std::get<ValueType::KeyValuePairsPtr>(result.vt_).get();
+	Value::KeyValuePairs *ps = std::get<Value::KeyValuePairsPtr>(result.vt_).get();
 	while (true) {
 		k = parseKey(p, pend);
 		if (!std::holds_alternative<std::string>(k.vt_)) {
@@ -319,7 +413,7 @@ static ValueType parseObject(const uint8_t **p, const uint8_t *const pend)
 	return result;
 }
 
-static ValueType parseArray(const uint8_t **p, const uint8_t *const pend)
+static Value parseArray(const uint8_t **p, const uint8_t *const pend)
 {
 	// expect **p == 'o'
 	assert(**p == 'A');
@@ -327,8 +421,8 @@ static ValueType parseArray(const uint8_t **p, const uint8_t *const pend)
 
 	const size_t len = parseVarInt(p, pend);
 
-	ValueType result(std::make_unique<ValueType::Values>());
-	ValueType::Values *vs = std::get<ValueType::ValuesPtr>(result.vt_).get();
+	Value result(std::make_unique<Value::Values>());
+	Value::Values *vs = std::get<Value::ValuesPtr>(result.vt_).get();
 
 	for (size_t i = 0; i < len; ++i) {
 		vs->emplace_back(parseVal(p, pend));
@@ -338,7 +432,7 @@ static ValueType parseArray(const uint8_t **p, const uint8_t *const pend)
 	return result;
 }
 
-static ValueType parseArray2(const uint8_t **p, const uint8_t *const pend)
+static Value parseArray2(const uint8_t **p, const uint8_t *const pend)
 {
 	// expect **p == 'o'
 	assert(**p == 'a');
@@ -346,10 +440,10 @@ static ValueType parseArray2(const uint8_t **p, const uint8_t *const pend)
 
 	const size_t len = parseVarInt(p, pend);
 
-	ValueType result(std::make_unique<ValueType::ValuePairs>());
-	ValueType::ValuePairs *ps = std::get<ValueType::ValuePairsPtr>(result.vt_).get();
+	Value result(std::make_unique<Value::ValuePairs>());
+	Value::ValuePairs *ps = std::get<Value::ValuePairsPtr>(result.vt_).get();
 
-	ValueType v1;
+	Value v1;
 	for (size_t i = 0; i < len; ++i) {
 		v1 = parseVal(p, pend);
 		ps->emplace_back(std::move(v1), parseVal(p, pend));
@@ -359,79 +453,12 @@ static ValueType parseArray2(const uint8_t **p, const uint8_t *const pend)
 	return result;
 }
 
-using std::cout;
-
-struct Visitor
-{
-	int indent_ = 0;
-
-	void indent()
-	{
-		for (int i = 0; i < indent_; ++i) {
-			cout << "    ";
-		}
-	}
-
-	void operator()(bool v) const {
-		cout << (v ? "True" : "False");
-	}
-
-	void operator()(int v) const {
-		cout << v;
-	}
-
-	void operator()(uint64_t v) const {
-		cout << v;
-	}
-
-	void operator()(const std::string &v) const {
-		cout << v;
-	}
-
-	void operator()(UnitType) const {
-		cout << "Null";
-	}
-
-	void operator()(SentinelType) const {
-		cout << "End";
-	}
-
-	void operator()(const ValueType::KeyValuePairsPtr &kvs) {
-		cout << '\n';
-		indent_++;
-		for (auto const &[k, v] : *kvs.get()) {
-			indent();
-			cout << k << '=';
-			std::visit(*this, v.vt_);
-			cout << '\n';
-		}
-		indent_--;
-	}
-
-	void operator()(const ValueType::ValuesPtr &vs) {
-		cout << '\n';
-		indent_++;
-		for (auto &v : *vs.get()) {
-			indent();
-			std::visit(*this, v.vt_);
-			cout << '\n';
-		}
-		indent_--;
-	}
-
-	void operator()(const ValueType::ValuePairsPtr &ps) {
-		indent_++;
-		for (auto &[k, v] : *ps.get()) {
-			indent();
-			std::visit(*this, v.vt_);
-			cout << '\n';
-		}
-		indent_--;
-	}
-};
+} // namespace parsers
 
 static bool parse_skype_contact_blob(const uint8_t *data, size_t size)
 {
+	using namespace parsers;
+
 	std::cout << "START Contact-----\n";
 	const uint8_t *p = data;
 	const uint8_t * const pend = data + size;
@@ -451,7 +478,7 @@ static bool parse_skype_contact_blob(const uint8_t *data, size_t size)
 	p++;
 
 	// 2. expect object 'o'
-	ValueType v = parseVal(&p, pend);
+	Value v = parseVal(&p, pend);
 	std::visit(Visitor(), v.vt_);
 	std::cout << "~~~~~~~~~~ Contact\n";
 	return true;
@@ -483,16 +510,31 @@ static bool parse_skype_message_blob(const uint8_t *data, size_t size)
 	p++;
 
 	// 2. expect object 'o'
-	ValueType v = parseVal(&p, pend);
+	Value v = parseVal(&p, pend);
 	std::visit(Visitor(), v.vt_);
 	std::cout << "~~~~~~~~~~ Message\n";
 	return true;
 }
 #endif
 
+int showUsage(const char *execPath)
+{
+	std::unique_ptr<char> pathCopy{strdup(execPath)};
+	const char *baseName = basename(pathCopy.get());
+	printf("Usage:\n"
+			"\t%s LEVELDB_PATH\n\n"
+			"For example:\n"
+			"\t%s ~/.config/skypeforlinux/IndexedDB/file__0.indexeddb.leveldb\n\n",
+			baseName, baseName);
+	return 1;
+}
+
 int main(int argc, char *argv[])
 {
 	using leveldb::Slice;
+	if (argc < 2) {
+		return showUsage(argv[0]);
+	}
 
 	auto scanFunction = [](Slice key, Slice value) -> void {
 
