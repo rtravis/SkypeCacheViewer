@@ -14,6 +14,8 @@
 #include <codecvt>
 #include <iostream>
 #include <locale>
+#include <memory>
+#include <ostream>
 #include <variant>
 
 
@@ -51,39 +53,37 @@ static void printSliceSummary(const leveldb::Slice &slice)
 template <class Function>
 static bool scan_leveldb(const char *dbPath, Function scanFunction)
 {
-	leveldb::DB* db;
 	leveldb::Options options;
 	options.create_if_missing = false;
 	options.comparator = leveldb_view::get_chromium_comparator();
 
-	leveldb::Status status = leveldb::DB::Open(options, dbPath, &db);
-	assert(status.ok());
-	if (!status.ok()) {
-		return false;
+	std::unique_ptr<leveldb::DB> db;
+	{
+		leveldb::DB *tempdb;
+		leveldb::Status status = leveldb::DB::Open(options, dbPath, &tempdb);
+		if (!status.ok()) {
+			return false;
+		}
+		db.reset(tempdb);
 	}
 
-	// TODO: use smart pointers
-	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	using leveldb::Iterator;
+	using leveldb::ReadOptions;
+
+	std::unique_ptr<Iterator> it {db->NewIterator(ReadOptions())};
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
 		scanFunction(it->key(), it->value());
 	}
 
-	bool ok = it->status().ok();
-	assert(ok); // Check for any errors found during the scan
-	delete it;
-	delete db;
-	return ok;
+	return it->status().ok();
 }
 
 namespace parse_result {
 
-struct Unit : std::monostate
-{
-};
+struct Unit : std::monostate {};
 
-struct ValueSentinel // signal the end of parsing of an object or of an array
-{
-};
+// ValueSentinel is used to signal the end of parsing of an object or of an array
+struct ValueSentinel {};
 
 class Value
 {
@@ -92,6 +92,8 @@ public:
 	using Values = std::vector<Value>;
 	using ValuePairs = std::vector<std::pair<Value, Value>>;
 
+	// Unfortunately we have to use reference semantics because we can't store
+	// a Value by value inside a Value.
 	using KeyValuePairsPtr = std::unique_ptr<KeyValuePairs>;
 	using ValuesPtr = std::unique_ptr<Values>;
 	using ValuePairsPtr = std::unique_ptr<ValuePairs>;
@@ -118,62 +120,66 @@ public:
 	Variant vt_;
 };
 
-using std::cout;
-
 struct Visitor
 {
+	std::ostream &ostr_;
 	int indent_ = 0;
+
+	Visitor(std::ostream &ostr) :
+			ostr_(ostr), indent_(0)
+	{
+	}
 
 	void indent()
 	{
 		for (int i = 0; i < indent_; ++i) {
-			cout << "    ";
+			ostr_ << "    ";
 		}
 	}
 
 	void operator()(bool v) const {
-		cout << (v ? "True" : "False");
+		ostr_ << (v ? "True" : "False");
 	}
 
 	void operator()(int v) const {
-		cout << v;
+		ostr_ << v;
 	}
 
 	void operator()(uint64_t v) const {
-		cout << v;
+		ostr_ << v;
 	}
 
 	void operator()(const std::string &v) const {
-		cout << v;
+		ostr_ << v;
 	}
 
 	void operator()(Unit) const {
-		cout << "Null";
+		ostr_ << "Null";
 	}
 
 	void operator()(ValueSentinel) const {
-		cout << "End";
+		ostr_ << "End";
 	}
 
 	void operator()(const Value::KeyValuePairsPtr &kvs) {
-		cout << '\n';
+		ostr_ << '\n';
 		indent_++;
 		for (auto const &[k, v] : *kvs.get()) {
 			indent();
-			cout << k << '=';
+			ostr_ << k << '=';
 			std::visit(*this, v.vt_);
-			cout << '\n';
+			ostr_ << '\n';
 		}
 		indent_--;
 	}
 
 	void operator()(const Value::ValuesPtr &vs) {
-		cout << '\n';
+		ostr_ << '\n';
 		indent_++;
 		for (auto &v : *vs.get()) {
 			indent();
 			std::visit(*this, v.vt_);
-			cout << '\n';
+			ostr_ << '\n';
 		}
 		indent_--;
 	}
@@ -183,7 +189,7 @@ struct Visitor
 		for (auto &[k, v] : *ps.get()) {
 			indent();
 			std::visit(*this, v.vt_);
-			cout << '\n';
+			ostr_ << '\n';
 		}
 		indent_--;
 	}
@@ -195,12 +201,14 @@ namespace parsers {
 
 using namespace parse_result;
 
+#if 0
 namespace new_parsers {
 
 template <class State, class Result>
 using Parser = std::optional<std::pair<Result, State>>(*)(State);
 
 } // namespace new_parsers
+#endif
 
 static size_t parseVarInt(const uint8_t **p, const uint8_t *const pend)
 {
@@ -455,11 +463,10 @@ static Value parseArray2(const uint8_t **p, const uint8_t *const pend)
 
 } // namespace parsers
 
-static bool parse_skype_contact_blob(const uint8_t *data, size_t size)
+static parsers::Value parse_skype_contact_blob(const uint8_t *data, size_t size)
 {
 	using namespace parsers;
 
-	std::cout << "START Contact-----\n";
 	const uint8_t *p = data;
 	const uint8_t * const pend = data + size;
 
@@ -478,10 +485,7 @@ static bool parse_skype_contact_blob(const uint8_t *data, size_t size)
 	p++;
 
 	// 2. expect object 'o'
-	Value v = parseVal(&p, pend);
-	std::visit(Visitor(), v.vt_);
-	std::cout << "~~~~~~~~~~ Contact\n";
-	return true;
+	return parseVal(&p, pend);
 }
 
 #if 0
@@ -551,8 +555,14 @@ int main(int argc, char *argv[])
 
 		static const leveldb::Slice contactPrefixKeySlice("\x00\x01\x06\x01\x01", 5);
 		if (key.starts_with(contactPrefixKeySlice)) {
-			parse_skype_contact_blob(reinterpret_cast<const uint8_t*>(value.data()),
+			auto v = parse_skype_contact_blob(reinterpret_cast<const uint8_t*>(value.data()),
 					value.size());
+
+			auto &ostr = std::cout;
+			using parse_result::Visitor;
+			ostr << "BEGIN Contact -----\n";
+			std::visit(Visitor(ostr), v.vt_);
+			ostr << "END Contact -----\n";
 		}
 	};
 
