@@ -19,7 +19,10 @@
 #include <variant>
 
 
-#if 0
+#define PRINT_DEBUG_DETAILS 0
+#define SHOW_MESSAGES 0
+
+#if PRINT_DEBUG_DETAILS
 static void printSlice(const leveldb::Slice &slice)
 {
 	for (size_t i = 0; i < slice.size(); ++i) {
@@ -48,7 +51,7 @@ static void printSliceSummary(const leveldb::Slice &slice)
 		printf("\\x%02x", (uint8_t) slice.data()[i]);
 	}
 }
-#endif
+#endif // PRINT_DEBUG_DETAILS
 
 template <class Function>
 static bool scan_leveldb(const char *dbPath, Function scanFunction)
@@ -255,7 +258,7 @@ static Value parseString(const uint8_t **p, const uint8_t *const pend)
 static Value parseUtf16String(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
-	// expect *i == '"'
+	// expect *i == 'c'
 	assert(*i == 'c');
 	i++;
 
@@ -299,10 +302,10 @@ static Value parseInt(const uint8_t **p, const uint8_t *const pend)
 static Value parseNull(const uint8_t **p, const uint8_t *const pend)
 {
 	const uint8_t *i = *p;
-	// expect *i == 'N'
-	assert(*i == '_');
-	i++;
-	*p = i;
+	// expect *i == '_'
+	// I don't know what the '0' stands for, so consider it the same as null
+	assert(*i == '_' || *i == '0');
+	*p = i + 1;
 	return Value();
 }
 
@@ -369,6 +372,7 @@ static Value parseVal(const uint8_t **p, const uint8_t *const pend)
 	case 'N':
 		return parse64BitInt(p, pend);
 	case '_':
+	case '0':
 		return parseNull(p, pend);
 	case 'F':
 	case 'T':
@@ -488,9 +492,11 @@ static parsers::Value parse_skype_contact_blob(const uint8_t *data, size_t size)
 	return parseVal(&p, pend);
 }
 
-#if 0
+#if SHOW_MESSAGES
 static bool parse_skype_message_blob(const uint8_t *data, size_t size)
 {
+	using namespace parsers;
+
 	std::cout << "START Message-----\n";
 	const uint8_t *p = data;
 	const uint8_t * const pend = data + size;
@@ -502,7 +508,7 @@ static bool parse_skype_message_blob(const uint8_t *data, size_t size)
 	p++;
 
 	// expect 0x12
-	assert(*p == 0x12);
+	assert(*p == 0x12 || *p == 0x13);
 	p++;
 
 	// expect 0xff
@@ -515,7 +521,7 @@ static bool parse_skype_message_blob(const uint8_t *data, size_t size)
 
 	// 2. expect object 'o'
 	Value v = parseVal(&p, pend);
-	std::visit(Visitor(), v.vt_);
+	std::visit(Visitor(std::cout), v.vt_);
 	std::cout << "~~~~~~~~~~ Message\n";
 	return true;
 }
@@ -542,7 +548,7 @@ int main(int argc, char *argv[])
 
 	auto scanFunction = [](Slice key, Slice value) -> void {
 
-#if 0
+#if PRINT_DEBUG_DETAILS
 		printf("key:  ");
 		printSlice(key);
 		printf("\n");
@@ -551,6 +557,19 @@ int main(int argc, char *argv[])
 		printf("\n\n");
 		printSliceSummary(key);
 		printf("\n");
+#endif
+
+#if SHOW_MESSAGES
+		static const leveldb::Slice msgPrefixKeySlice1("\x00\x01\x02\x01\x01\x24\x00", 7);
+		static const leveldb::Slice msgPrefixKeySlice2("\x00\x01\x01\x01\x04\x02\x01", 7);
+		static const leveldb::Slice msgPrefixKeySlice3("\x00\x01\x04\x01\x01", 5);
+
+		if (key.starts_with(msgPrefixKeySlice1)
+			|| key.starts_with(msgPrefixKeySlice2)
+			|| key.starts_with(msgPrefixKeySlice3)) {
+			parse_skype_message_blob(reinterpret_cast<const uint8_t*>(value.data()),
+					value.size());
+		}
 #endif
 
 		static const leveldb::Slice contactPrefixKeySlice("\x00\x01\x06\x01\x01", 5);
