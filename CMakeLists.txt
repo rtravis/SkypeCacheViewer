@@ -7,6 +7,12 @@ project(SkypeCacheViewer)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# check dependencies
+find_library(LEVELDB_LIB "leveldb")
+if(NOT LEVELDB_LIB)
+  message(FATAL_ERROR "The leveldb library was not found")
+endif()
+
 add_subdirectory(chromium)
 include_directories(chromium)
 
