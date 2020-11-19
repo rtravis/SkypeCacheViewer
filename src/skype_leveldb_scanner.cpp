@@ -17,6 +17,7 @@
 #include <memory>
 #include <ostream>
 #include <variant>
+#include <vector>
 
 
 #define PRINT_DEBUG_DETAILS 0
