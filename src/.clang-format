@@ -1,0 +1,10 @@
+﻿---
+BasedOnStyle: LLVM
+BreakBeforeBraces: Mozilla
+ColumnLimit: '80'
+ContinuationIndentWidth: '8'
+IndentWidth: '4'
+TabWidth: '4'
+UseTab: Always
+
+...

@@ -16,12 +16,12 @@
 #include <locale>
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <variant>
 #include <vector>
 
 
 #define PRINT_DEBUG_DETAILS 0
-#define SHOW_MESSAGES 0
 
 #if PRINT_DEBUG_DETAILS
 static void printSlice(const leveldb::Slice &slice)
@@ -48,7 +48,7 @@ static void printSlice(const leveldb::Slice &slice)
 static void printSliceSummary(const leveldb::Slice &slice)
 {
 	printf("%u ", (unsigned) slice.size());
-	for (size_t i = 0; i < slice.size() && i < 32; ++i) {
+	for (size_t i = 0; i < slice.size() && i < 48; ++i) {
 		printf("\\x%02x", (uint8_t) slice.data()[i]);
 	}
 }
@@ -362,12 +362,15 @@ static Value parseKey(const uint8_t **p, const uint8_t *const pend);
 static Value parseVal(const uint8_t **p, const uint8_t *const pend)
 {
 	uint8_t tag = **p;
+	if (tag == '\0' || tag == '\x01') {
+		// sometimes added for padding, skip it
+		(*p)++;
+		tag = **p;
+	}
+
 	switch (tag) {
 	case '"':
 		return parseString(p, pend);
-	case '\0': // sometimes added for padding, skip it
-		(*p)++;
-		[[fallthrough]];
 	case 'c':
 		return parseUtf16String(p, pend);
 	case 'N':
@@ -493,12 +496,55 @@ static parsers::Value parse_skype_contact_blob(const uint8_t *data, size_t size)
 	return parseVal(&p, pend);
 }
 
-#if SHOW_MESSAGES
+static std::string skypeTimestampToString(uint64_t ts)
+{
+	time_t t = (ts - 4782822804267467000) / 4096000;
+	struct tm parts = {};
+	gmtime_r(&t, &parts);
+	char buffer[80];
+	snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d-%02d-%02dZ",
+			 parts.tm_year + 1900, parts.tm_mon + 1, parts.tm_mday,
+			 parts.tm_hour, parts.tm_min, parts.tm_sec);
+	return buffer;
+}
+
+static std::string show_message(const parsers::Value &v)
+{
+	using namespace parsers;
+
+	if (!std::holds_alternative<Value::KeyValuePairsPtr>(v.vt_)) {
+		return std::string();
+	}
+
+	auto pairs = std::get<Value::KeyValuePairsPtr>(v.vt_).get();
+	std::ostringstream os;
+
+	bool messageOk = false;
+	for (auto const &[k, val] : *pairs) {
+		if (k == "messagetype") {
+			auto const &mtype = std::get<std::string>(val.vt_);
+			messageOk = (mtype == "RichText" || mtype == "Text");
+		} else if (k == "cuid" || k == "conversationId" || k == "creator") {
+			os << k << '=' << std::get<std::string>(val.vt_) << '\n';
+		} else if (k == "createdTime" || k == "composeTime") {
+			os << k << '='
+			   << skypeTimestampToString(std::get<uint64_t>(val.vt_)) << '\n';
+		} else if (k == "content") {
+			os << '\n' << std::get<std::string>(val.vt_) << '\n';
+		}
+	}
+
+	if (messageOk) {
+		return os.str();
+	} else {
+		return std::string();
+	}
+}
+
 static bool parse_skype_message_blob(const uint8_t *data, size_t size)
 {
 	using namespace parsers;
 
-	std::cout << "START Message-----\n";
 	const uint8_t *p = data;
 	const uint8_t * const pend = data + size;
 
@@ -509,7 +555,7 @@ static bool parse_skype_message_blob(const uint8_t *data, size_t size)
 	p++;
 
 	// expect 0x12
-	assert(*p == 0x12 || *p == 0x13);
+	assert(*p == 0x12 || *p == 0x13 || *p == 0x14);
 	p++;
 
 	// expect 0xff
@@ -522,32 +568,56 @@ static bool parse_skype_message_blob(const uint8_t *data, size_t size)
 
 	// 2. expect object 'o'
 	Value v = parseVal(&p, pend);
-	std::visit(Visitor(std::cout), v.vt_);
-	std::cout << "~~~~~~~~~~ Message\n";
+	auto const msg = show_message(v);
+	if (!msg.empty()) {
+		std::cout << msg << "\n\n";
+	}
+
 	return true;
 }
-#endif
 
 int showUsage(const char *execPath)
 {
 	std::unique_ptr<char> pathCopy{strdup(execPath)};
 	const char *baseName = basename(pathCopy.get());
-	printf("Usage:\n"
-			"\t%s LEVELDB_PATH\n\n"
-			"For example:\n"
-			"\t%s ~/.config/skypeforlinux/IndexedDB/file__0.indexeddb.leveldb\n\n",
+	printf("USAGE: %s [options] <LEVELDB_PATH>\n\n"
+			"OPTIONS:\n"
+			"\t-h  - show this help\n"
+			"\t-m  - display messages instead of contacts\n\n"
+			"EXAMPLE:\n"
+			"\t%s ~/.config/skypeforlinux/IndexedDB/file__0.indexeddb.leveldb\n",
 			baseName, baseName);
 	return 1;
 }
 
+static const leveldb::Slice contactPrefixKeySlice("\x00\x01\x06\x01\x01", 5);
+static const leveldb::Slice msgPrefixKeySlice1("\x00\x01\x02\x01\x01\x24\x00", 7);
+static const leveldb::Slice msgPrefixKeySlice2("\x00\x01\x01\x01\x04\x02\x01", 7);
+static const leveldb::Slice msgPrefixKeySlice3("\x00\x01\x04\x01\x01", 5);
+
 int main(int argc, char *argv[])
 {
 	using leveldb::Slice;
-	if (argc < 2) {
+
+	// parse the command line arguments
+	bool showHelp = (argc < 2);
+	bool showMessages = false;
+	const char *dbPath = nullptr;
+	for (int i = 1; i < argc; ++i) {
+		if (strcmp(argv[i], "-m") == 0) {
+			showMessages = true;
+		} else if (strcmp(argv[i], "-h") == 0) {
+			showHelp = true;
+		} else {
+			dbPath = argv[i];
+		}
+	}
+
+	if (showHelp || !dbPath) {
 		return showUsage(argv[0]);
 	}
 
-	auto scanFunction = [](Slice key, Slice value) -> void {
+	auto scanFunction = [showMessages](Slice key, Slice value) -> void {
 
 #if PRINT_DEBUG_DETAILS
 		printf("key:  ");
@@ -555,27 +625,25 @@ int main(int argc, char *argv[])
 		printf("\n");
 		printf("data: ");
 		printSlice(value);
-		printf("\n\n");
+		printf("\nsummary: ");
 		printSliceSummary(key);
-		printf("\n");
+		printf("\n\n");
 #endif
 
-#if SHOW_MESSAGES
-		static const leveldb::Slice msgPrefixKeySlice1("\x00\x01\x02\x01\x01\x24\x00", 7);
-		static const leveldb::Slice msgPrefixKeySlice2("\x00\x01\x01\x01\x04\x02\x01", 7);
-		static const leveldb::Slice msgPrefixKeySlice3("\x00\x01\x04\x01\x01", 5);
-
-		if (key.starts_with(msgPrefixKeySlice1)
-			|| key.starts_with(msgPrefixKeySlice2)
-			|| key.starts_with(msgPrefixKeySlice3)) {
-			parse_skype_message_blob(reinterpret_cast<const uint8_t*>(value.data()),
-					value.size());
+		if (showMessages) {
+			if (key.starts_with(msgPrefixKeySlice1) ||
+				key.starts_with(msgPrefixKeySlice2) ||
+				key.starts_with(msgPrefixKeySlice3)) {
+				parse_skype_message_blob(
+						reinterpret_cast<const uint8_t *>(value.data()),
+						value.size());
+			}
+			return;
 		}
-#endif
 
-		static const leveldb::Slice contactPrefixKeySlice("\x00\x01\x06\x01\x01", 5);
 		if (key.starts_with(contactPrefixKeySlice)) {
-			auto v = parse_skype_contact_blob(reinterpret_cast<const uint8_t*>(value.data()),
+			auto v = parse_skype_contact_blob(
+					reinterpret_cast<const uint8_t *>(value.data()),
 					value.size());
 
 			auto &ostr = std::cout;
@@ -586,6 +654,5 @@ int main(int argc, char *argv[])
 		}
 	};
 
-	const char *dbPath = argv[1];
 	return scan_leveldb(dbPath, scanFunction) ? 0 : 1;
 }
