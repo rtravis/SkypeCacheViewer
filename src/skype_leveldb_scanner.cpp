@@ -508,7 +508,34 @@ static std::string skypeTimestampToString(uint64_t ts)
 	return buffer;
 }
 
-static std::string show_message(const parsers::Value &v)
+static std::string &toCsvFieldValue(std::string &val)
+{
+	auto pos = val.find_first_of(",\"\n\r");
+	if (pos == std::string::npos) {
+		return val;
+	}
+
+	val.insert(0, 1, '"');
+	pos++;
+	if (val[pos] == '"') {
+		val.insert(pos, 1, '"');
+		pos += 2;
+	}
+	while (true) {
+		pos = val.find('"', pos);
+		if (pos != std::string::npos) {
+			val.insert(pos, 1, '"');
+			pos += 2;
+		} else {
+			break;
+		}
+	}
+	val += '"';
+	return val;
+}
+
+static std::string show_skype_message(const parsers::Value &v,
+									  const bool useCsvFormat)
 {
 	using namespace parsers;
 
@@ -520,17 +547,33 @@ static std::string show_message(const parsers::Value &v)
 	std::ostringstream os;
 
 	bool messageOk = false;
+	std::string currentValue;
 	for (auto const &[k, val] : *pairs) {
 		if (k == "messagetype") {
 			auto const &mtype = std::get<std::string>(val.vt_);
 			messageOk = (mtype == "RichText" || mtype == "Text");
+			continue;
 		} else if (k == "cuid" || k == "conversationId" || k == "creator") {
-			os << k << '=' << std::get<std::string>(val.vt_) << '\n';
+			currentValue = std::get<std::string>(val.vt_);
 		} else if (k == "createdTime" || k == "composeTime") {
-			os << k << '='
-			   << skypeTimestampToString(std::get<uint64_t>(val.vt_)) << '\n';
+			currentValue = skypeTimestampToString(std::get<uint64_t>(val.vt_));
 		} else if (k == "content") {
-			os << '\n' << std::get<std::string>(val.vt_) << '\n';
+			currentValue = std::get<std::string>(val.vt_);
+		} else {
+			continue;
+		}
+
+		if (!useCsvFormat) {
+			if (k != "content") {
+				os << k << '=' << currentValue << '\n';
+			} else {
+				os << '\n' << std::get<std::string>(val.vt_) << '\n';
+			}
+		} else {
+			os << toCsvFieldValue(currentValue);
+			if (k != "content") {
+				os << ',';
+			}
 		}
 	}
 
@@ -541,7 +584,8 @@ static std::string show_message(const parsers::Value &v)
 	}
 }
 
-static bool parse_skype_message_blob(const uint8_t *data, size_t size)
+static parsers::Value parse_skype_message_blob(const uint8_t *data,
+											   const size_t size)
 {
 	using namespace parsers;
 
@@ -567,13 +611,14 @@ static bool parse_skype_message_blob(const uint8_t *data, size_t size)
 	p++;
 
 	// 2. expect object 'o'
-	Value v = parseVal(&p, pend);
-	auto const msg = show_message(v);
-	if (!msg.empty()) {
-		std::cout << msg << "\n\n";
-	}
+	return parseVal(&p, pend);
+}
 
-	return true;
+static std::string show_skype_message_blob(const uint8_t *data,
+										   const size_t size, bool useCsvFormat)
+{
+	return show_skype_message(parse_skype_message_blob(data, size),
+							  useCsvFormat);
 }
 
 int showUsage(const char *execPath)
@@ -582,8 +627,9 @@ int showUsage(const char *execPath)
 	const char *baseName = basename(pathCopy.get());
 	printf("USAGE: %s [options] <LEVELDB_PATH>\n\n"
 			"OPTIONS:\n"
-			"\t-h  - show this help\n"
-			"\t-m  - display messages instead of contacts\n\n"
+			"\t-h   - show this help\n"
+			"\t-m   - display messages instead of contacts\n"
+			"\t-csv - display messages in CSV format\n\n"
 			"EXAMPLE:\n"
 			"\t%s ~/.config/skypeforlinux/IndexedDB/file__0.indexeddb.leveldb\n",
 			baseName, baseName);
@@ -602,10 +648,13 @@ int main(int argc, char *argv[])
 	// parse the command line arguments
 	bool showHelp = (argc < 2);
 	bool showMessages = false;
+	bool useCsvFormat = false;
 	const char *dbPath = nullptr;
 	for (int i = 1; i < argc; ++i) {
 		if (strcmp(argv[i], "-m") == 0) {
 			showMessages = true;
+		} else if (strcmp(argv[i], "-csv") == 0) {
+			useCsvFormat = true;
 		} else if (strcmp(argv[i], "-h") == 0) {
 			showHelp = true;
 		} else {
@@ -617,7 +666,7 @@ int main(int argc, char *argv[])
 		return showUsage(argv[0]);
 	}
 
-	auto scanFunction = [showMessages](Slice key, Slice value) -> void {
+	auto scanFunction = [showMessages, useCsvFormat](Slice key, Slice value) {
 
 #if PRINT_DEBUG_DETAILS
 		printf("key:  ");
@@ -634,9 +683,15 @@ int main(int argc, char *argv[])
 			if (key.starts_with(msgPrefixKeySlice1) ||
 				key.starts_with(msgPrefixKeySlice2) ||
 				key.starts_with(msgPrefixKeySlice3)) {
-				parse_skype_message_blob(
+				auto formatedMsg = show_skype_message_blob(
 						reinterpret_cast<const uint8_t *>(value.data()),
-						value.size());
+						value.size(), useCsvFormat);
+				if (!formatedMsg.empty()) {
+					std::cout << formatedMsg << '\n';
+					if (!useCsvFormat) {
+						std::cout << '\n';
+					}
+				}
 			}
 			return;
 		}
