@@ -19,6 +19,7 @@ include_directories(chromium)
 # add the executable
 add_executable(${PROJECT_NAME}
 	src/chromium_leveldb_comparator_provider.cpp
+	src/string_encoding_utils.cpp
 	src/skype_leveldb_scanner.cpp)
 
 target_link_libraries(${PROJECT_NAME}

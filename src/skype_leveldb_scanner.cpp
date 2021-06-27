@@ -7,6 +7,7 @@
  *              that can be found in the LICENSE file.
  */
 #include "chromium_leveldb_comparator_provider.h"
+#include "string_encoding_utils.h"
 
 #include <leveldb/db.h>
 #include <leveldb/slice.h>
@@ -250,7 +251,7 @@ static Value parseString(const uint8_t **p, const uint8_t *const pend)
 	i++;
 
 	const size_t len = parseVarInt(&i, pend);
-	std::string result(i, i + len);
+	auto result = cp::convert_iso8859_to_utf8(i, len);
 	i += len;
 	*p = i;
 	return Value(result);
