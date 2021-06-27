@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # check dependencies
 find_library(LEVELDB_LIB "leveldb")
 if(NOT LEVELDB_LIB)
-  message(FATAL_ERROR "The leveldb library was not found")
+  message(FATAL_ERROR "ERROR: The leveldb library is required, but was not found!")
 endif()
 
 add_subdirectory(chromium)
