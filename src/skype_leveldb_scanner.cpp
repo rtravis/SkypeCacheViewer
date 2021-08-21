@@ -97,8 +97,8 @@ public:
 	using Values = std::vector<Value>;
 	using ValuePairs = std::vector<std::pair<Value, Value>>;
 
-	// Unfortunately we have to use reference semantics because we can't store
-	// a Value by value inside a Value.
+	// we have to use reference semantics because we can't store a Value by
+	// value inside a Value.
 	using KeyValuePairsPtr = std::unique_ptr<KeyValuePairs>;
 	using ValuesPtr = std::unique_ptr<Values>;
 	using ValuePairsPtr = std::unique_ptr<ValuePairs>;
@@ -595,6 +595,11 @@ static parsers::Value parse_skype_message_blob(const uint8_t *data,
 
 	// first field is a Varint, maybe the record ID
 	parseVarInt(&p, pend);
+	if (*p != 0xff) {
+		// unexpected record type
+		return parsers::Value();
+	}
+
 	// expect 0xff
 	assert(*p == 0xff);
 	p++;
